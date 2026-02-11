@@ -1,0 +1,706 @@
+================================================================
+AI-POWERED COMPLAINT & ESCALATION MANAGEMENT SYSTEM
+COMPLETE TABLE DESIGN WITH ADMIN (7 CORE TABLES)
+================================================================
+
+================================================================
+TABLE 1: USERS
+================================================================
+Purpose: Store all user/employee information
+
+Column Name                     Data Type       Description
+--------------------------------------------------------------------------------
+id                              UUID            Unique identifier
+employee_id                     VARCHAR(50)     Company employee ID (unique)
+email                           VARCHAR(255)    Email address (unique)
+password_hash                   TEXT            Encrypted password
+
+-- Personal Information
+first_name                      VARCHAR(100)    First name
+last_name                       VARCHAR(100)    Last name
+phone                           VARCHAR(20)     Phone number
+date_of_birth                   DATE            Date of birth
+
+-- Location & Department
+department_id                   UUID            Department reference
+location                        VARCHAR(255)    Office location/address
+city                            VARCHAR(100)    City
+state                           VARCHAR(100)    State/Province
+country                         VARCHAR(100)    Country
+postal_code                     VARCHAR(20)     Postal code
+
+-- Employment Details
+job_title                       VARCHAR(200)    Job title
+hire_date                       DATE            Date hired
+manager_id                      UUID            Manager reference (users table)
+employment_status               VARCHAR(50)     active/inactive/terminated
+
+-- Role & Permissions
+user_role                       VARCHAR(50)     user/professional/admin/super_admin
+is_admin                        BOOLEAN         Admin flag (quick check)
+is_super_admin                  BOOLEAN         Super admin flag (highest level)
+
+-- Account Security
+status                          VARCHAR(50)     Account status (active/inactive/suspended)
+last_login_at                   TIMESTAMP       Last login time
+failed_login_attempts           INTEGER         Failed login counter
+account_locked_until            TIMESTAMP       Account lock expiry
+
+-- Preferences
+preferred_language              VARCHAR(10)     Language preference (en/es/fr)
+timezone                        VARCHAR(50)     User timezone
+notification_email              BOOLEAN         Email notifications enabled
+notification_sms                BOOLEAN         SMS notifications enabled
+
+-- Audit Fields
+created_at                      TIMESTAMP       Creation timestamp
+updated_at                      TIMESTAMP       Last update timestamp
+deleted_at                      TIMESTAMP       Soft delete timestamp
+
+
+================================================================
+TABLE 2: ADMINS
+================================================================
+Purpose: Admin users with full system access and override capabilities
+
+Column Name                     Data Type       Description
+--------------------------------------------------------------------------------
+id                              UUID            Unique identifier
+user_id                         UUID            User reference (users table)
+
+-- Admin Level
+admin_level                     VARCHAR(50)     super_admin/system_admin/department_admin
+admin_type                      VARCHAR(50)     full_access/limited_access/read_only
+
+-- Permissions (Full Access)
+can_view_all_identities         BOOLEAN         Can see all raiser identities (always TRUE for super admin)
+can_override_ai_decisions       BOOLEAN         Can override AI predictions
+can_assign_complaints           BOOLEAN         Can manually assign complaints
+can_reassign_complaints         BOOLEAN         Can reassign from any professional
+can_close_any_complaint         BOOLEAN         Can close any complaint
+can_escalate_complaints         BOOLEAN         Can escalate to any level
+can_delete_complaints           BOOLEAN         Can delete complaints (soft delete)
+
+-- System Administration
+can_manage_users                BOOLEAN         Can create/update/delete users
+can_manage_professionals        BOOLEAN         Can create/update/delete professionals
+can_manage_departments          BOOLEAN         Can create/update/delete departments
+can_manage_visibility_rules     BOOLEAN         Can configure visibility rules
+can_manage_escalation_rules     BOOLEAN         Can configure escalation rules
+can_manage_system_config        BOOLEAN         Can change system configuration
+
+-- Data Access
+can_view_all_complaints         BOOLEAN         Can view all complaints
+can_view_all_evidence           BOOLEAN         Can access all evidence files
+can_export_data                 BOOLEAN         Can export data/reports
+can_view_audit_logs             BOOLEAN         Can view complete audit trail
+
+-- Special Permissions
+can_impersonate_users           BOOLEAN         Can login as other users (for support)
+can_bypass_restrictions         BOOLEAN         Can bypass all access restrictions
+can_modify_audit_logs           BOOLEAN         Can modify audit logs (usually FALSE)
+
+-- Department/Location Scope
+scope_level                     VARCHAR(50)     global/department/location
+department_scope_ids            UUID[]          Array of department IDs (if limited)
+location_scope_ids              UUID[]          Array of location IDs (if limited)
+
+-- Admin Details
+admin_designation               VARCHAR(200)    Admin title/designation
+reporting_to_admin_id           UUID            Reports to admin (self-reference)
+specialization                  VARCHAR(200)    Area of admin specialization
+
+-- Activity & Performance
+total_overrides                 INTEGER         Total AI overrides performed
+total_assignments               INTEGER         Total manual assignments made
+total_escalations               INTEGER         Total escalations triggered
+last_action_at                  TIMESTAMP       Last admin action timestamp
+
+-- Status
+status                          VARCHAR(50)     active/inactive/suspended/revoked
+activation_date                 DATE            Date granted admin access
+deactivation_date               DATE            Date admin access revoked
+revocation_reason               TEXT            Reason for revocation
+
+-- Security
+mfa_enabled                     BOOLEAN         Multi-factor authentication required
+mfa_secret                      TEXT            MFA secret key
+privileged_session_timeout_min  INTEGER         Session timeout in minutes (default: 30)
+ip_whitelist                    TEXT[]          Array of allowed IP addresses
+requires_approval_for           TEXT[]          Actions requiring secondary approval
+
+-- Audit Trail (Enhanced)
+created_at                      TIMESTAMP       Creation timestamp
+created_by_admin_id             UUID            Created by admin
+updated_at                      TIMESTAMP       Last update timestamp
+updated_by_admin_id             UUID            Last updated by admin
+deleted_at                      TIMESTAMP       Soft delete timestamp
+deleted_by_admin_id             UUID            Deleted by admin
+
+-- Notes
+notes                           TEXT            Admin notes
+metadata                        JSONB           Additional metadata
+
+
+================================================================
+TABLE 3: PROFESSIONALS
+================================================================
+Purpose: Professionals who handle complaints (extended user profile)
+
+Column Name                     Data Type       Description
+--------------------------------------------------------------------------------
+id                              UUID            Unique identifier
+user_id                         UUID            User reference (users table)
+
+-- Authority & Level
+authority_level                 VARCHAR(10)     Authority level (A1, A2, B1, Z1, etc.)
+authority_rank                  INTEGER         Numeric rank (1=highest, 52=lowest)
+department_id                   UUID            Department reference
+
+-- Professional Details
+professional_title              VARCHAR(200)    Professional designation
+specialization                  VARCHAR(200)    Area of expertise
+certification_number            VARCHAR(100)    Certification number
+license_number                  VARCHAR(100)    License number
+license_expiry_date             DATE            License expiry
+
+-- Capacity & Workload
+max_concurrent_cases            INTEGER         Maximum cases can handle at once
+current_case_count              INTEGER         Current active cases
+is_available                    BOOLEAN         Available for new assignments
+availability_status             VARCHAR(50)     available/busy/on-leave/unavailable
+
+-- Experience & Performance
+years_of_experience             INTEGER         Years of experience
+total_cases_handled             INTEGER         Total cases handled lifetime
+cases_resolved                  INTEGER         Total cases successfully resolved
+average_resolution_days         DECIMAL(10,2)   Average resolution time in days
+success_rate                    DECIMAL(5,2)    Success rate percentage
+performance_rating              DECIMAL(3,2)    Performance rating (0-5)
+
+-- Contact
+office_phone                    VARCHAR(20)     Office phone
+office_email                    VARCHAR(255)    Office email
+office_location                 VARCHAR(255)    Office address
+
+-- Skills
+expertise_areas                 TEXT[]          Array of expertise areas
+languages_spoken                TEXT[]          Array of languages
+
+-- Status
+status                          VARCHAR(50)     active/inactive/suspended
+activation_date                 DATE            Date activated as professional
+deactivation_date               DATE            Date deactivated
+
+-- Audit Fields
+created_at                      TIMESTAMP       Creation timestamp
+updated_at                      TIMESTAMP       Last update timestamp
+deleted_at                      TIMESTAMP       Soft delete timestamp
+
+
+================================================================
+TABLE 4: DEPARTMENTS
+================================================================
+Purpose: Organizational departments
+
+Column Name                     Data Type       Description
+--------------------------------------------------------------------------------
+id                              UUID            Unique identifier
+department_code                 VARCHAR(50)     Department code (unique)
+name                            VARCHAR(200)    Department name
+description                     TEXT            Department description
+
+-- Hierarchy
+parent_department_id            UUID            Parent department (self-reference)
+level                           INTEGER         Hierarchy level (1=top)
+
+-- Leadership
+head_professional_id            UUID            Department head reference
+deputy_head_id                  UUID            Deputy head reference
+admin_owner_id                  UUID            Admin responsible for department
+
+-- Contact
+email                           VARCHAR(255)    Department email
+phone                           VARCHAR(20)     Department phone
+
+-- Location
+primary_location                VARCHAR(255)    Primary office location
+city                            VARCHAR(100)    City
+country                         VARCHAR(100)    Country
+
+-- Configuration
+auto_assign_enabled             BOOLEAN         Enable auto-assignment of complaints
+escalation_threshold_hours      INTEGER         Hours before auto-escalation (default: 48)
+max_complaints_per_professional INTEGER         Max complaints per professional (default: 10)
+
+-- Status
+status                          VARCHAR(50)     active/inactive/closed
+established_date                DATE            Date established
+closure_date                    DATE            Date closed
+
+-- Audit Fields
+created_at                      TIMESTAMP       Creation timestamp
+created_by_admin_id             UUID            Created by admin
+updated_at                      TIMESTAMP       Last update timestamp
+updated_by_admin_id             UUID            Last updated by admin
+deleted_at                      TIMESTAMP       Soft delete timestamp
+deleted_by_admin_id             UUID            Deleted by admin
+
+
+================================================================
+TABLE 5: COMPLAINTS
+================================================================
+Purpose: Core complaint records (main table)
+
+Column Name                     Data Type       Description
+--------------------------------------------------------------------------------
+id                              UUID            Unique identifier
+complaint_number                VARCHAR(50)     Auto-generated complaint number (unique)
+reference_number                VARCHAR(100)    External reference number
+
+-- Who Raised It
+raised_by_user_id               UUID            User who raised complaint
+raised_by_professional_id       UUID            Professional who raised complaint
+raiser_type                     VARCHAR(50)     user/professional/anonymous
+is_anonymous                    BOOLEAN         Anonymous complaint flag
+anonymous_token                 VARCHAR(255)    Token for anonymous follow-up
+
+-- Against Whom/What
+subject_type                    VARCHAR(50)     individual/department/policy/system
+against_user_id                 UUID            Complaint against user
+against_professional_id         UUID            Complaint against professional
+against_department_id           UUID            Complaint against department
+
+-- Complaint Content
+title                           VARCHAR(500)    Complaint title/subject
+description                     TEXT            Detailed description
+category                        VARCHAR(100)    harassment/discrimination/safety/ethics/other
+subcategory                     VARCHAR(100)    Subcategory
+
+-- Incident Details
+incident_date                   DATE            Date of incident
+incident_time                   TIME            Time of incident
+incident_location               VARCHAR(255)    Location where incident occurred
+witness_count                   INTEGER         Number of witnesses
+
+-- Classification
+severity                        VARCHAR(50)     critical/high/medium/low
+priority                        VARCHAR(50)     urgent/high/normal/low
+department_id                   UUID            Assigned department
+
+-- AI Analysis
+ai_predicted_severity           VARCHAR(50)     AI predicted severity
+ai_predicted_department_id      UUID            AI predicted department
+ai_required_authority_rank      INTEGER         AI suggested minimum authority rank
+ai_confidence_score             DECIMAL(5,4)    AI confidence score (0.0-1.0)
+ai_explanation                  TEXT            AI reasoning/explanation
+ai_processed_at                 TIMESTAMP       When AI processed the complaint
+
+-- Admin Override
+ai_overridden                   BOOLEAN         AI decision overridden by admin
+ai_override_by_admin_id         UUID            Admin who overrode AI
+ai_override_reason              TEXT            Reason for override
+ai_override_at                  TIMESTAMP       Override timestamp
+
+-- Assignment
+assigned_to_professional_id     UUID            Assigned professional
+assigned_at                     TIMESTAMP       Assignment timestamp
+assigned_by_user_id             UUID            Who assigned it (user/admin)
+assigned_by_admin_id            UUID            Admin who assigned (if manual)
+assignment_method               VARCHAR(50)     ai/manual_admin/manual_user/auto
+
+-- Status & Progress
+status                          VARCHAR(50)     submitted/under_review/investigating/resolved/closed/escalated
+progress_percentage             INTEGER         Progress (0-100)
+status_notes                    TEXT            Status notes
+
+-- Resolution
+resolution_summary              TEXT            Resolution summary
+resolution_action               VARCHAR(100)    Action taken
+resolved_at                     TIMESTAMP       Resolution timestamp
+resolved_by_professional_id     UUID            Who resolved it
+
+-- Escalation
+is_escalated                    BOOLEAN         Escalated flag
+escalation_count                INTEGER         Number of times escalated
+escalated_from_complaint_id     UUID            Original complaint reference
+escalation_reason               VARCHAR(255)    Reason for escalation
+current_escalation_level        INTEGER         Current escalation level
+escalated_by_admin_id           UUID            Admin who escalated (if manual)
+
+-- Timeline Tracking
+submitted_at                    TIMESTAMP       Submission timestamp
+acknowledged_at                 TIMESTAMP       Acknowledgment timestamp
+first_response_at               TIMESTAMP       First response timestamp
+sla_deadline                    TIMESTAMP       SLA deadline
+time_to_acknowledge_hours       DECIMAL(10,2)   Hours to acknowledge
+time_to_resolve_hours           DECIMAL(10,2)   Hours to resolve
+
+-- Visibility & Privacy (Admin can always see everything)
+identity_visible                BOOLEAN         Raiser identity visible
+details_visible                 BOOLEAN         Details visible to assigned
+evidence_visible                BOOLEAN         Evidence visible
+visibility_overridden_by_admin  BOOLEAN         Admin overrode visibility rules
+visibility_override_admin_id    UUID            Admin who overrode visibility
+
+-- Contact Preferences
+preferred_contact_method        VARCHAR(50)     email/phone/anonymous_portal
+contact_email                   VARCHAR(255)    Contact email
+contact_phone                   VARCHAR(20)     Contact phone
+
+-- Quality & Feedback
+raiser_satisfaction_rating      INTEGER         Satisfaction rating (1-5)
+raiser_feedback                 TEXT            Feedback from raiser
+feedback_received_at            TIMESTAMP       Feedback timestamp
+
+-- Flags
+is_urgent                       BOOLEAN         Urgent flag
+is_sensitive                    BOOLEAN         Sensitive content flag
+is_confidential                 BOOLEAN         Confidential flag
+requires_legal_review           BOOLEAN         Legal review required
+requires_hr_review              BOOLEAN         HR review required
+flagged_by_admin                BOOLEAN         Flagged by admin for special attention
+flag_reason                     TEXT            Admin flag reason
+
+-- Related Complaints
+parent_complaint_id             UUID            Parent complaint reference
+related_complaint_ids           UUID[]          Array of related complaint IDs
+
+-- Closure
+closed_at                       TIMESTAMP       Closure timestamp
+closed_by_user_id               UUID            Who closed it (user/professional)
+closed_by_admin_id              UUID            Admin who closed it (if admin)
+closure_reason                  VARCHAR(255)    Closure reason
+
+-- Additional Data
+tags                            TEXT[]          Array of tags
+notes                           TEXT            Internal notes
+admin_notes                     TEXT            Admin-only notes
+metadata                        JSONB           Additional data (JSON)
+
+-- Audit Fields
+created_at                      TIMESTAMP       Creation timestamp
+created_by_user_id              UUID            Created by user
+updated_at                      TIMESTAMP       Last update timestamp
+updated_by_user_id              UUID            Last updated by user
+updated_by_admin_id             UUID            Last updated by admin
+deleted_at                      TIMESTAMP       Soft delete timestamp
+deleted_by_admin_id             UUID            Deleted by admin
+version                         INTEGER         Version number (optimistic locking)
+
+
+================================================================
+TABLE 6: EVIDENCE
+================================================================
+Purpose: Store evidence files attached to complaints
+
+Column Name                     Data Type       Description
+--------------------------------------------------------------------------------
+id                              UUID            Unique identifier
+complaint_id                    UUID            Complaint reference
+uploaded_by_user_id             UUID            User who uploaded
+uploaded_by_professional_id     UUID            Professional who uploaded
+uploaded_by_admin_id            UUID            Admin who uploaded
+
+-- File Information
+file_name                       VARCHAR(255)    Stored file name (unique)
+original_file_name              VARCHAR(255)    Original file name
+file_type                       VARCHAR(100)    document/image/video/audio/other
+mime_type                       VARCHAR(100)    MIME type (image/jpeg, application/pdf, etc.)
+file_size_bytes                 BIGINT          File size in bytes
+file_extension                  VARCHAR(10)     File extension (.pdf, .jpg, etc.)
+
+-- Storage
+storage_path                    TEXT            Full file path in storage
+storage_provider                VARCHAR(50)     s3/azure/gcp/local
+file_hash                       VARCHAR(128)    SHA-256 hash for integrity
+
+-- Security
+encryption_status               VARCHAR(50)     encrypted/unencrypted
+is_virus_scanned                BOOLEAN         Virus scan completed
+virus_scan_status               VARCHAR(50)     clean/infected/pending
+virus_scan_date                 TIMESTAMP       Scan timestamp
+
+-- Classification
+evidence_type                   VARCHAR(100)    email/screenshot/document/recording/photo
+classification_level            VARCHAR(50)     public/internal/confidential/restricted
+
+-- Description
+title                           VARCHAR(255)    Evidence title
+description                     TEXT            Evidence description
+tags                            TEXT[]          Array of tags
+
+-- OCR & Text Extraction
+extracted_text                  TEXT            Extracted text content
+ocr_processed                   BOOLEAN         OCR processing completed
+
+-- Access Control (Admin always has access)
+is_visible                      BOOLEAN         Visibility flag
+access_level                    VARCHAR(50)     Who can access (raiser/assigned/admin/all)
+access_overridden_by_admin      BOOLEAN         Admin overrode access rules
+access_override_admin_id        UUID            Admin who overrode access
+
+-- Retention
+retention_period_days           INTEGER         Retention period in days
+auto_delete_date                DATE            Scheduled deletion date
+delete_override_by_admin_id     UUID            Admin who prevented auto-delete
+
+-- Status
+status                          VARCHAR(50)     active/archived/deleted
+
+-- Upload Details
+uploaded_at                     TIMESTAMP       Upload timestamp
+uploaded_from_ip                VARCHAR(50)     Upload IP address
+
+-- Audit Fields
+created_at                      TIMESTAMP       Creation timestamp
+updated_at                      TIMESTAMP       Last update timestamp
+deleted_at                      TIMESTAMP       Soft delete timestamp
+deleted_by_admin_id             UUID            Deleted by admin
+
+
+================================================================
+TABLE 7: AUDIT_LOGS
+================================================================
+Purpose: Immutable audit trail for compliance and security
+         SPECIAL: Tracks all admin actions with extra detail
+
+Column Name                     Data Type       Description
+--------------------------------------------------------------------------------
+id                              UUID            Unique identifier
+
+-- Who Did It
+actor_user_id                   UUID            User who performed action
+actor_professional_id           UUID            Professional who performed action
+actor_admin_id                  UUID            Admin who performed action
+actor_type                      VARCHAR(50)     user/professional/admin/super_admin/system
+actor_ip_address                VARCHAR(50)     IP address
+session_id                      VARCHAR(100)    Session identifier
+
+-- What Was Done
+action                          VARCHAR(100)    create/read/update/delete/login/logout/export/assign/escalate/override
+action_category                 VARCHAR(50)     authentication/complaint/data_access/admin_action/override/configuration
+description                     TEXT            Action description
+
+-- Admin-Specific Actions
+is_admin_action                 BOOLEAN         Action performed by admin
+admin_override                  BOOLEAN         Admin override flag
+override_reason                 TEXT            Reason for override
+requires_justification          BOOLEAN         Action required justification
+justification_provided          TEXT            Admin justification
+
+-- What Was Affected
+target_entity_type              VARCHAR(100)    complaint/user/professional/department/evidence/admin/config
+target_entity_id                UUID            Target entity ID
+target_identifier               VARCHAR(255)    Target identifier (e.g., complaint_number, email)
+
+-- Request Details
+request_method                  VARCHAR(10)     GET/POST/PUT/DELETE
+request_path                    TEXT            Request path/URL
+request_params                  JSONB           Request parameters (JSON)
+
+-- Changes Made
+old_values                      JSONB           Before changes (JSON)
+new_values                      JSONB           After changes (JSON)
+fields_changed                  TEXT[]          Array of field names changed
+
+-- Result
+status                          VARCHAR(50)     success/failure/partial
+error_message                   TEXT            Error message if failed
+
+-- Security & Risk
+risk_level                      VARCHAR(50)     low/medium/high/critical
+is_suspicious                   BOOLEAN         Suspicious activity flag
+security_alert_triggered        BOOLEAN         Security alert triggered
+security_notes                  TEXT            Security notes
+
+-- Admin Accountability
+approved_by_admin_id            UUID            Admin who approved (for critical actions)
+approval_required               BOOLEAN         Action required approval
+approval_timestamp              TIMESTAMP       Approval timestamp
+
+-- When It Happened
+occurred_at                     TIMESTAMP       Event timestamp
+duration_ms                     INTEGER         Operation duration in milliseconds
+
+-- Compliance
+retention_until                 TIMESTAMP       Retention end date
+is_archived                     BOOLEAN         Archived flag
+compliance_category             VARCHAR(50)     GDPR/HIPAA/SOC2/ISO27001
+
+-- Additional Data
+metadata                        JSONB           Additional metadata (JSON)
+
+-- Audit Fields (Immutable - NO UPDATES ALLOWED)
+created_at                      TIMESTAMP       Creation timestamp (immutable)
+
+
+================================================================
+RELATIONSHIPS BETWEEN TABLES
+================================================================
+
+USERS
+├── Has one: Admin profile (optional)
+├── Has one: Professional profile (optional)
+├── Has many: Complaints (as raiser)
+├── Has one: Department
+├── Has one: Manager (self-reference to Users)
+
+ADMINS
+├── Belongs to: User (one-to-one)
+├── Has many: Complaint overrides
+├── Has many: Admin actions in Audit Logs
+├── Reports to: Admin (self-reference)
+├── Manages: Departments (optional scope)
+
+PROFESSIONALS
+├── Belongs to: User (one-to-one)
+├── Has one: Department
+├── Has many: Complaints (as assigned professional)
+└── Has many: Complaints (as resolver)
+
+DEPARTMENTS
+├── Has many: Users
+├── Has many: Professionals
+├── Has many: Complaints
+├── Has one: Head Professional
+├── Has one: Admin Owner
+└── Has one: Parent Department (self-reference)
+
+COMPLAINTS
+├── Belongs to: User (raiser)
+├── Belongs to: Professional (raiser, assigned, resolver)
+├── Belongs to: Admin (override, assignment, escalation, closure)
+├── Belongs to: Department
+├── Has many: Evidence
+├── Has many: Audit Logs
+└── Has one: Parent Complaint (self-reference)
+
+EVIDENCE
+├── Belongs to: Complaint
+├── Uploaded by: User, Professional, or Admin
+└── Access overridden by: Admin (optional)
+
+AUDIT_LOGS
+├── Actor: User, Professional, or Admin
+├── Approved by: Admin (for critical actions)
+└── References: Any entity (polymorphic relationship)
+
+
+================================================================
+ADMIN CAPABILITIES SUMMARY
+================================================================
+
+FULL ACCESS:
+✓ View all complaint identities (even anonymous)
+✓ View all evidence and attachments
+✓ Access complete audit trail
+✓ Export all data and reports
+
+OVERRIDE POWERS:
+✓ Override AI predictions and routing
+✓ Override visibility and privacy rules
+✓ Override access controls on evidence
+✓ Bypass escalation rules
+✓ Manually assign/reassign any complaint
+
+MANAGEMENT:
+✓ Create/update/delete users
+✓ Create/update/delete professionals
+✓ Manage departments and hierarchy
+✓ Configure system settings
+✓ Manage visibility rules
+✓ Manage escalation rules
+
+COMPLAINT ACTIONS:
+✓ Close any complaint
+✓ Escalate to any level
+✓ Reassign to any professional
+✓ Flag complaints for attention
+✓ Add admin-only notes
+
+SECURITY:
+✓ All admin actions audited
+✓ MFA required for admins
+✓ IP whitelisting support
+✓ Session timeout controls
+✓ Critical actions require justification
+✓ Some actions require secondary admin approval
+
+
+================================================================
+ADMIN TYPES & LEVELS
+================================================================
+
+SUPER_ADMIN:
+- Full unrestricted access
+- Can manage other admins
+- Can modify system configuration
+- No department/location restrictions
+
+SYSTEM_ADMIN:
+- Full access to complaints and users
+- Can manage professionals and departments
+- Cannot modify other admins
+- Global scope
+
+DEPARTMENT_ADMIN:
+- Limited to specific departments
+- Can manage users in their departments
+- Can handle complaints in their scope
+- Cannot override super admin decisions
+
+
+================================================================
+KEY FEATURES SUMMARY
+================================================================
+
+✓ Soft Deletes: All tables support soft deletion
+✓ Audit Trails: Complete tracking of all changes
+✓ Admin Tracking: Every admin action logged with justification
+✓ Versioning: Optimistic locking on complaints
+✓ Anonymity: Full anonymous complaint support
+✓ AI Integration: AI predictions with admin override
+✓ Hierarchical: Departments, authority levels, admin levels
+✓ Flexible Storage: JSONB for extensibility
+✓ Security: MFA, IP whitelisting, encryption, virus scanning
+✓ Override System: Admins can override any rule
+✓ Compliance: Immutable audit logs with retention
+✓ Full Visibility: Admins see everything (no restrictions)
+
+
+================================================================
+DATA TYPES USED
+================================================================
+
+UUID        - All primary keys and foreign keys
+VARCHAR     - Text with length limits
+TEXT        - Unlimited text
+INTEGER     - Whole numbers
+DECIMAL     - Precise decimal numbers
+BOOLEAN     - True/false flags
+TIMESTAMP   - Date and time
+DATE        - Date only
+TIME        - Time only
+TEXT[]      - Arrays of text
+UUID[]      - Arrays of UUIDs
+JSONB       - JSON data with indexing support
+
+
+================================================================
+INDEXES NEEDED (for performance)
+================================================================
+
+PRIMARY KEYS: All tables
+FOREIGN KEYS: All relationships
+UNIQUE INDEXES: email, employee_id, complaint_number
+ADMIN INDEXES: is_admin, admin_level, user_role
+STATUS INDEXES: status fields on all tables
+DATE INDEXES: created_at, submitted_at, resolved_at
+DELETED_AT: For soft delete filtering
+ACTOR INDEXES: All actor_*_id fields in audit_logs
+
+
+================================================================
+END OF COMPLETE TABLE DESIGN WITH ADMIN
+================================================================

@@ -1,0 +1,336 @@
+================================================================
+DATABASE RELATIONSHIP DIAGRAM (ASCII)
+AI-Powered Complaint Management System
+================================================================
+
+                            ┌─────────────────┐
+                            │     USERS       │
+                            │  (Base Table)   │
+                            └────────┬────────┘
+                                     │
+                    ┌────────────────┼────────────────┐
+                    │                │                │
+                    │                │                │
+         ┌──────────▼──────┐  ┌─────▼─────┐  ┌──────▼────────┐
+         │     ADMINS      │  │PROFESSIONALS│  │ DEPARTMENTS   │
+         │  (Admin Role)   │  │(Handler Role)│  │(Organization) │
+         └──────┬──────────┘  └──────┬──────┘  └───────┬───────┘
+                │                    │                  │
+                │                    │                  │
+                │                    │                  │
+                │         ┌──────────▼──────────────────▼──────┐
+                │         │                                     │
+                │         │         COMPLAINTS                  │
+                │         │        (Core Table)                 │
+                │         │                                     │
+                │         └──────────┬──────────────────────────┘
+                │                    │                          
+                └────────────────────┼──────────────────┐       
+                                     │                  │       
+                          ┌──────────▼────────┐  ┌─────▼──────┐
+                          │     EVIDENCE      │  │ AUDIT_LOGS │
+                          │  (Attachments)    │  │ (Tracking) │
+                          └───────────────────┘  └────────────┘
+
+
+================================================================
+DETAILED RELATIONSHIP BREAKDOWN
+================================================================
+
+1. USERS (Central Table)
+   ├── Has optional: ADMIN profile (1:1)
+   ├── Has optional: PROFESSIONAL profile (1:1)
+   ├── Belongs to: DEPARTMENTS (Many:1)
+   ├── Reports to: USERS.manager_id (Self-reference)
+   ├── Raises: COMPLAINTS (1:Many)
+   └── Can be subject of: COMPLAINTS (1:Many)
+
+2. ADMINS (Full System Access)
+   ├── Extends: USERS (1:1)
+   ├── Reports to: ADMINS (Self-reference)
+   ├── Manages: DEPARTMENTS (1:Many) [if scoped]
+   ├── Overrides: COMPLAINTS (1:Many)
+   ├── Assigns: COMPLAINTS (1:Many)
+   ├── Escalates: COMPLAINTS (1:Many)
+   ├── Closes: COMPLAINTS (1:Many)
+   └── Tracked in: AUDIT_LOGS (1:Many)
+
+3. PROFESSIONALS (Complaint Handlers)
+   ├── Extends: USERS (1:1)
+   ├── Belongs to: DEPARTMENTS (Many:1)
+   ├── Assigned to: COMPLAINTS (1:Many)
+   ├── Resolves: COMPLAINTS (1:Many)
+   ├── Can raise: COMPLAINTS (1:Many)
+   └── Can be subject of: COMPLAINTS (1:Many)
+
+4. DEPARTMENTS (Organizational Structure)
+   ├── Has: USERS (1:Many)
+   ├── Has: PROFESSIONALS (1:Many)
+   ├── Handles: COMPLAINTS (1:Many)
+   ├── Parent: DEPARTMENTS (Self-reference)
+   ├── Head: PROFESSIONALS (1:1)
+   ├── Managed by: ADMINS (Many:1)
+   └── Can be subject of: COMPLAINTS (1:Many)
+
+5. COMPLAINTS (Main Complaint Records)
+   ├── Raised by: USERS or PROFESSIONALS (Many:1)
+   ├── Against: USERS or PROFESSIONALS or DEPARTMENTS (Many:1)
+   ├── Assigned to: PROFESSIONALS (Many:1)
+   ├── Resolved by: PROFESSIONALS (Many:1)
+   ├── Belongs to: DEPARTMENTS (Many:1)
+   ├── Has: EVIDENCE (1:Many)
+   ├── Tracked in: AUDIT_LOGS (1:Many)
+   ├── Parent: COMPLAINTS (Self-reference for escalation)
+   ├── Overridden by: ADMINS (Many:1)
+   ├── Assigned by: ADMINS (Many:1)
+   ├── Escalated by: ADMINS (Many:1)
+   └── Closed by: ADMINS (Many:1)
+
+6. EVIDENCE (File Attachments)
+   ├── Belongs to: COMPLAINTS (Many:1)
+   ├── Uploaded by: USERS or PROFESSIONALS or ADMINS (Many:1)
+   └── Access controlled by: ADMINS (override)
+
+7. AUDIT_LOGS (Immutable Tracking)
+   ├── Actor: USERS or PROFESSIONALS or ADMINS (Many:1)
+   ├── Approved by: ADMINS (Many:1)
+   └── References: Any entity (Polymorphic)
+
+
+================================================================
+RELATIONSHIP LEGEND
+================================================================
+
+1:1   = One-to-One
+1:Many = One-to-Many
+Many:1 = Many-to-One
+Many:Many = Many-to-Many
+
+
+================================================================
+KEY FOREIGN KEYS
+================================================================
+
+USERS TABLE:
+├── department_id → DEPARTMENTS.id
+└── manager_id → USERS.id
+
+ADMINS TABLE:
+├── user_id → USERS.id
+└── reporting_to_admin_id → ADMINS.id
+
+PROFESSIONALS TABLE:
+├── user_id → USERS.id
+└── department_id → DEPARTMENTS.id
+
+DEPARTMENTS TABLE:
+├── parent_department_id → DEPARTMENTS.id
+├── head_professional_id → PROFESSIONALS.id
+└── admin_owner_id → ADMINS.id
+
+COMPLAINTS TABLE:
+├── raised_by_user_id → USERS.id
+├── raised_by_professional_id → PROFESSIONALS.id
+├── against_user_id → USERS.id
+├── against_professional_id → PROFESSIONALS.id
+├── against_department_id → DEPARTMENTS.id
+├── department_id → DEPARTMENTS.id
+├── ai_predicted_department_id → DEPARTMENTS.id
+├── ai_override_by_admin_id → ADMINS.id
+├── assigned_to_professional_id → PROFESSIONALS.id
+├── assigned_by_admin_id → ADMINS.id
+├── resolved_by_professional_id → PROFESSIONALS.id
+├── escalated_from_complaint_id → COMPLAINTS.id
+├── escalated_by_admin_id → ADMINS.id
+└── closed_by_admin_id → ADMINS.id
+
+EVIDENCE TABLE:
+├── complaint_id → COMPLAINTS.id
+├── uploaded_by_user_id → USERS.id
+├── uploaded_by_professional_id → PROFESSIONALS.id
+└── uploaded_by_admin_id → ADMINS.id
+
+AUDIT_LOGS TABLE:
+├── actor_user_id → USERS.id
+├── actor_professional_id → PROFESSIONALS.id
+├── actor_admin_id → ADMINS.id
+└── approved_by_admin_id → ADMINS.id
+
+
+================================================================
+DATA FLOW DIAGRAM
+================================================================
+
+COMPLAINT SUBMISSION:
+┌─────────┐
+│  USER   │ raises complaint
+└────┬────┘
+     │
+     ▼
+┌──────────────┐
+│  COMPLAINT   │ ← AI analyzes
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│ PROFESSIONAL │ ← Auto-assigned OR Admin assigns
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│  RESOLUTION  │
+└──────────────┘
+
+
+ADMIN OVERRIDE FLOW:
+┌─────────┐
+│  ADMIN  │ views complaint
+└────┬────┘
+     │
+     ├─→ Override AI prediction
+     ├─→ Change assignment
+     ├─→ Escalate immediately
+     ├─→ Close complaint
+     └─→ View all identities
+          │
+          ▼
+     ┌────────────┐
+     │ AUDIT_LOG  │ ← All actions tracked
+     └────────────┘
+
+
+ESCALATION FLOW:
+┌──────────────┐
+│  COMPLAINT   │ (Initial)
+└──────┬───────┘
+       │ Escalate
+       ▼
+┌──────────────┐
+│  COMPLAINT   │ (Escalated - higher authority)
+└──────┬───────┘
+       │ parent_complaint_id points to original
+       ▼
+┌──────────────────┐
+│  PROFESSIONAL    │ (Higher authority level)
+│ (Authority A1)   │
+└──────────────────┘
+
+
+================================================================
+CARDINALITY NOTATION
+================================================================
+
+USERS ──────── DEPARTMENTS
+  │              │
+  │              │
+  Many           One
+  
+USERS ────────── ADMINS
+  │                │
+  │                │
+  One              One (optional)
+
+COMPLAINTS ────── EVIDENCE
+  │                 │
+  │                 │
+  One              Many
+
+PROFESSIONALS ──── COMPLAINTS
+  │                 │
+  │                 │
+  One              Many (assigned)
+
+
+================================================================
+HIERARCHY VISUALIZATIONS
+================================================================
+
+DEPARTMENT HIERARCHY:
+┌─────────────────────┐
+│  Engineering (L1)   │
+└──────────┬──────────┘
+           │
+    ┌──────┴──────┐
+    │             │
+┌───▼──────┐  ┌──▼────────┐
+│ Backend  │  │ Frontend  │ (L2)
+│  (L2)    │  │   (L2)    │
+└──────────┘  └───────────┘
+
+AUTHORITY HIERARCHY:
+A1 (Rank 1) ← Highest Authority
+A2 (Rank 2)
+B1 (Rank 3)
+B2 (Rank 4)
+...
+Z1 (Rank 52) ← Lowest Authority
+
+ADMIN HIERARCHY:
+┌─────────────────┐
+│  SUPER ADMIN    │ (Full Access)
+└────────┬────────┘
+         │
+    ┌────┴─────┐
+    │          │
+┌───▼─────┐ ┌─▼──────────┐
+│ SYSTEM  │ │ DEPARTMENT │
+│ ADMIN   │ │   ADMIN    │
+└─────────┘ └────────────┘
+
+
+================================================================
+ACCESS CONTROL MATRIX
+================================================================
+
+Entity         | User | Professional | Admin | Super Admin
+---------------|------|--------------|-------|------------
+Own Data       |  ✓   |      ✓       |   ✓   |      ✓
+All Users      |  ✗   |      ✗       |   ✓   |      ✓
+Complaints     | Own  |   Assigned   |  All  |     All
+Identities     |  ✗   |  If visible  |  All  |     All
+Evidence       | Own  |   Assigned   |  All  |     All
+AI Override    |  ✗   |      ✗       |   ✓   |      ✓
+System Config  |  ✗   |      ✗       |   ✓   |      ✓
+Audit Logs     |  ✗   |      ✗       | View  |  View+Export
+Create Admin   |  ✗   |      ✗       |   ✗   |      ✓
+
+
+================================================================
+INDEXES FOR PERFORMANCE
+================================================================
+
+PRIMARY INDEXES:
+- All tables have UUID primary key (id)
+
+FOREIGN KEY INDEXES:
+- All foreign key relationships indexed
+- Speeds up JOIN operations
+
+UNIQUE INDEXES:
+- users.email
+- users.employee_id
+- complaints.complaint_number
+- departments.department_code
+
+STATUS INDEXES:
+- users.status
+- professionals.status
+- complaints.status
+- evidence.status
+
+SOFT DELETE INDEXES:
+- All deleted_at columns (partial index WHERE deleted_at IS NULL)
+
+SEARCH INDEXES:
+- complaints.title, description (full-text search)
+- audit_logs.action, target_entity_type
+
+PERFORMANCE INDEXES:
+- complaints.submitted_at, resolved_at
+- audit_logs.occurred_at
+- professionals.authority_rank
+
+
+================================================================
+END OF DATABASE DIAGRAM
+================================================================
